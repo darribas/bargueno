@@ -8,7 +8,7 @@ Bargueño is an offline-first writing studio for manuscripts and slide decks. It
 
 It is a heavily configured JupyterLab, delivered through JupyterLite, pared back into a minimal, writing-focused environment.
 
-**Name.** A *bargueño* is the classic 16th-century Spanish portable writing cabinet. It is a chest of small drawers and compartments whose drop-front lid becomes the writing surface. The display name is **Bargueño**; the repo, package and URL slug is **`bargeno`**.
+**Name.** A *bargueño* is the classic 16th-century Spanish portable writing cabinet. It is a chest of small drawers and compartments whose drop-front lid becomes the writing surface. The display name is **Bargueño**; the repo, package and URL slug is **`bargueno`**.
 
 **Design principles**
 
@@ -86,7 +86,7 @@ Every source except raw .typ is parsed into the MyST AST, which is the single in
 | .typ | Manuscripts only | typst.ts directly | Bypasses the AST; full Typst, no Word export |
 | .bib | References | Typst (manuscripts), citation-js (slides, Word) | One per project |
 
-**Document kind.** The frontmatter key `bargeno.kind: manuscript | slides` decides the pipeline. If the key is missing, .typ files default to manuscript, and other files default to manuscript unless they contain slide breaks.
+**Document kind.** The frontmatter key `bargueno.kind: manuscript | slides` decides the pipeline. If the key is missing, .typ files default to manuscript, and other files default to manuscript unless they contain slide breaks.
 
 **Raw Typst inside MyST.** A ```` ```{raw} typst ```` block passes through to Typst output and is ignored by other outputs.
 
@@ -166,7 +166,7 @@ A project is a folder, and it is the unit of import, export and settings.
 
 ```
 my-paper/
-├── bargeno.yml        # project settings: compute on/off, default template, citation style
+├── bargueno.yml        # project settings: compute on/off, default template, citation style
 ├── paper.md
 ├── talk.ipynb
 ├── references.bib
@@ -191,7 +191,7 @@ Exports exclude `_exports/` by default and keep paths relative, so the zip mirro
 
 ## Computation
 
-Compute is off by default and switched on per project with `compute: true` in `bargeno.yml`.
+Compute is off by default and switched on per project with `compute: true` in `bargueno.yml`.
 
 - When it is off, no kernel is loaded, code cells are read-only, and stored outputs render as-is in previews and exports.
 - When it is on, a Pyodide kernel loads lazily the first time a cell runs, and a run button appears on code cells. Kernel files are cached for offline use only after the first opt-in, keeping the base install small.
@@ -218,7 +218,7 @@ All exports run on-device and are written to `_exports/`, then offered through t
 
 ## Hosting, build and distribution
 
-Bargueño is open source in a public `bargeno` GitHub repo and served from GitHub Pages.
+Bargueño is open source in a public `bargueno` GitHub repo and served from GitHub Pages.
 
 - **Build:** `jupyter lite build` with Bargueño's own extensions (shell, .md adapter, Typst preview, exporters, Harper), plus prebuilt jupyterlab-myst, jupyterlab-myst-revealjs and jupyterlab-vim. GitHub Actions builds and deploys on each tag.
 - **PWA:** a manifest and an icon set, with a service worker that precaches the app shell, typst.ts WASM, fonts and reveal.js. Pyodide is cached on demand.
@@ -251,7 +251,7 @@ Bargueño is open source in a public `bargeno` GitHub repo and served from GitHu
 
 1. **Spike:** a JupyterLite build with jupyterlab-myst, jupyterlab-myst-revealjs and jupyterlab-vim installed, opened on iPad offline. Confirm the slide extension works with no kernel.
 2. **Typst preview:** a .md file with a MyST AST, rendered through myst-to-typst and typst.ts into an SVG preview pane; PDF export; bundled fonts.
-3. **Projects and sync:** project folders, `bargeno.yml`, zip import/export via the share sheet, and a full round trip through Working Copy.
+3. **Projects and sync:** project folders, `bargueno.yml`, zip import/export via the share sheet, and a full round trip through Working Copy.
 4. **Slides:** the .md-to-notebook adapter, the house theme, standalone HTML and PDF export.
 5. **Strip and theme:** the disabled-plugin list, Simple Interface defaults, `overrides.json`, the Bargueño theme extension, pruned context menus, focus mode and the preferences screen.
 6. **Polish:** templates (article, report, letter, plus the user template contract), citations, Word export, Harper, and optional Pyodide.

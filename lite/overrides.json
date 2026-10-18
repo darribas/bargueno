@@ -1,0 +1,25 @@
+{
+  "@jupyterlab/apputils-extension:themes": {
+    "adaptive-theme": true
+  },
+  "@jupyterlab/apputils-extension:notification": {
+    "fetchNews": "false",
+    "checkForUpdates": false
+  },
+  "@jupyterlab/fileeditor-extension:plugin": {
+    "editorConfig": {
+      "lineNumbers": false,
+      "lineWrap": true
+    }
+  },
+  "@jupyterlab/notebook-extension:tracker": {
+    "markdownCellConfig": {
+      "lineNumbers": false,
+      "lineWrap": true
+    }
+  },
+  "@axlair/jupyterlab_vim:plugin": {
+    "enabled": true,
+    "enabledInEditors": true
+  }
+}
