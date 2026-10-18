@@ -7,9 +7,9 @@
 //     use to reach the in-browser file system.
 'use strict';
 
-const VERSION = '__BARGENO_VERSION__';
-const PRECACHE = __BARGENO_PRECACHE__;
-const CACHE = `bargeno-${VERSION}`;
+const VERSION = '__BARGUENO_VERSION__';
+const PRECACHE = __BARGUENO_PRECACHE__;
+const CACHE = `bargueno-${VERSION}`;
 const RUNTIME = `${CACHE}-runtime`;
 const broadcast = new BroadcastChannel('/sw-api.v1');
 
@@ -28,7 +28,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
       for (const key of await caches.keys()) {
-        if (key.startsWith('bargeno-') && key !== CACHE && key !== RUNTIME) {
+        if (key.startsWith('bargueno-') && key !== CACHE && key !== RUNTIME) {
           await caches.delete(key);
         }
       }
@@ -38,8 +38,8 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('message', (event) => {
-  if (event.data === 'bargeno:version') {
-    event.source.postMessage({ type: 'bargeno:version', version: VERSION });
+  if (event.data === 'bargueno:version') {
+    event.source.postMessage({ type: 'bargueno:version', version: VERSION });
   }
 });
 

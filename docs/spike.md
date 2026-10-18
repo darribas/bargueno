@@ -58,8 +58,6 @@ No kernel package is installed, so the app has zero kernel specs.
 5. **`window.jupyterapp`** is exposed (`exposeAppInBrowser`) for tests and
    debugging. Since nothing leaves the device this is harmless, but it can be
    dropped from production builds later.
-6. The repo slug is `bargueno`, while SPEC.md says `bargeno`. The Pages URL
-   will follow the repo name.
 
 ## Next: milestone 2 (Typst preview)
 

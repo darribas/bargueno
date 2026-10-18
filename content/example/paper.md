@@ -3,7 +3,7 @@ title: A Portable Writing Cabinet
 authors:
   - name: Ada Example
     affiliations: Somewhere University
-bargeno:
+bargueno:
   kind: manuscript
 ---
 

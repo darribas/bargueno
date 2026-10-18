@@ -36,7 +36,7 @@ HEAD_TAGS = """
     <link rel="apple-touch-icon" href="{root}apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="192x192" href="{root}icon-192.png">
 """
-MARKER = "<!-- bargeno:head -->"
+MARKER = "<!-- bargueno:head -->"
 
 
 def precache_list(dist: Path) -> list[str]:
@@ -97,8 +97,8 @@ def write_service_worker(dist: Path) -> int:
         digest.update(rel.encode())
         digest.update((dist / rel).read_bytes())
     sw = SW_TEMPLATE.read_text()
-    sw = sw.replace("__BARGENO_VERSION__", digest.hexdigest()[:12])
-    sw = sw.replace("__BARGENO_PRECACHE__", json.dumps(paths))
+    sw = sw.replace("__BARGUENO_VERSION__", digest.hexdigest()[:12])
+    sw = sw.replace("__BARGUENO_PRECACHE__", json.dumps(paths))
     (dist / "service-worker.js").write_text(sw)
     return len(paths)
 
@@ -107,7 +107,7 @@ def main(dist: Path) -> None:
     write_manifest(dist)
     patch_pages(dist)
     count = write_service_worker(dist)
-    print(f"bargeno: patched {dist} ({count} files precached)")
+    print(f"bargueno: patched {dist} ({count} files precached)")
 
 
 if __name__ == "__main__":
