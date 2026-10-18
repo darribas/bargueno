@@ -1,0 +1,7 @@
+.venv/
+dist/
+.jupyterlite.doit.db
+node_modules/
+test-results/
+__pycache__/
+_exports/

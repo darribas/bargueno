@@ -1,0 +1,4 @@
+# Bargueño project settings (not yet read by the app; see SPEC.md).
+compute: false
+template: article
+citation-style: apa
