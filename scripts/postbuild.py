@@ -5,6 +5,9 @@ Run after the build:  python scripts/postbuild.py dist
 - rewrites the web manifest with Bargueño's name and icons
 - adds iPad Home Screen meta tags to every app page
 - copies the Typst WASM modules and bundled fonts into bargueno/typst/
+- zips content/example into bargueno/example.zip, which the app unpacks into
+  browser storage on first launch (files shipped as JupyterLite contents
+  can never be deleted, so the example would be stuck forever)
 - replaces JupyterLite's service worker with one that precaches the app
   shell (so it opens offline) while keeping JupyterLite's drive broadcast
 """
@@ -14,11 +17,13 @@ import json
 import re
 import shutil
 import sys
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SW_TEMPLATE = ROOT / "lite" / "service-worker.js"
 ICONS = ROOT / "lite" / "icons"
+EXAMPLE = ROOT / "content" / "example"
 NODE_MODULES = ROOT / "extension" / "node_modules"
 
 # Served from bargueno/typst/ and loaded by extension/src/engine.ts.
@@ -122,6 +127,15 @@ def copy_typst_assets(dist: Path) -> None:
     shutil.copy(NODE_MODULES / TYPST_FONT_DIR.rsplit("/", 1)[0] / "NOTICE", out / "FONTS-NOTICE.txt")
 
 
+def zip_example(dist: Path) -> None:
+    out = dist / "bargueno" / "example.zip"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
+        for path in sorted(EXAMPLE.rglob("*")):
+            if path.is_file():
+                zf.write(path, f"{EXAMPLE.name}/{path.relative_to(EXAMPLE).as_posix()}")
+
+
 def write_service_worker(dist: Path) -> int:
     paths = precache_list(dist)
     digest = hashlib.sha256()
@@ -139,6 +153,7 @@ def main(dist: Path) -> None:
     write_manifest(dist)
     patch_pages(dist)
     copy_typst_assets(dist)
+    zip_example(dist)
     count = write_service_worker(dist)
     print(f"bargueno: patched {dist} ({count} files precached)")
 

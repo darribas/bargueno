@@ -5,6 +5,8 @@ export async function openApp(page) {
   await page.waitForFunction(() => window.jupyterapp?.started !== undefined, null, { timeout: 60_000 });
   await page.evaluate(() => window.jupyterapp.started);
   await page.evaluate(() => window.jupyterapp.restored);
+  // Set by bargueno:projects once the example project is in storage.
+  await page.waitForSelector('body[data-bargueno-ready]', { state: 'attached', timeout: 30_000 });
 }
 
 export const exec = (page, id, args = {}) =>

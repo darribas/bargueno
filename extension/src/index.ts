@@ -11,9 +11,12 @@ import { ToolbarButton } from '@jupyterlab/ui-components';
 import { Widget } from '@lumino/widgets';
 
 import { kernelPolicyPlugin } from './kernel';
+import { IProjects } from './project';
+import { projectsPlugin } from './projects-plugin';
+import { bytesToBase64 } from './bytes';
+import { download } from './files';
 import {
   buildInput,
-  bytesToBase64,
   compilePdf,
   EXPORT_DIR,
   isManuscript,
@@ -33,9 +36,14 @@ const typstPlugin: JupyterFrontEndPlugin<void> = {
   id: 'bargueno:typst',
   description: 'Typst preview pane and PDF / Typst exports for manuscripts.',
   autoStart: true,
-  requires: [ILabShell],
+  requires: [ILabShell, IProjects],
   optional: [ICommandPalette],
-  activate: (app: JupyterFrontEnd, shell: ILabShell, palette: ICommandPalette | null) => {
+  activate: (
+    app: JupyterFrontEnd,
+    shell: ILabShell,
+    projects: IProjects,
+    palette: ICommandPalette | null
+  ) => {
     const { commands, docRegistry } = app;
     const contents = app.serviceManager.contents;
     const previews = new WidgetTracker<PreviewWidget>({ namespace: 'bargueno-preview' });
@@ -60,6 +68,7 @@ const typstPlugin: JupyterFrontEndPlugin<void> = {
     };
 
     const findPreview = (path: string) => previews.find(w => w.content.path === path);
+    const templateFor = (path: string) => projects.settings(projects.projectOf(path)).template;
 
     commands.addCommand(CommandIDs.preview, {
       label: 'Preview Manuscript',
@@ -72,7 +81,9 @@ const typstPlugin: JupyterFrontEndPlugin<void> = {
         }
         let widget = findPreview(source.path);
         if (!widget) {
-          const content = new TypstPreview(source, contents);
+          const content = new TypstPreview(source, contents, () =>
+            templateFor(source.path)
+          );
           widget = new MainAreaWidget({ content });
           widget.id = `bargueno-preview-${Private.id++}`;
           widget.title.label = `Preview: ${PathExt.basename(source.path)}`;
@@ -114,7 +125,8 @@ const typstPlugin: JupyterFrontEndPlugin<void> = {
         const { pdf, problems } = await compilePdf(
           source.path,
           source.model.toString(),
-          contents
+          contents,
+          templateFor(source.path)
         );
         if (!pdf) {
           throw new Error(`Typst could not compile ${source.path}:\n${problems.join('\n')}`);
@@ -139,7 +151,12 @@ const typstPlugin: JupyterFrontEndPlugin<void> = {
         if (!source) {
           return;
         }
-        const { standalone } = await buildInput(source.path, source.model.toString(), contents);
+        const { standalone } = await buildInput(
+          source.path,
+          source.model.toString(),
+          contents,
+          templateFor(source.path)
+        );
         const path = await writeExport(contents, source.path, '.typ', {
           format: 'text',
           content: standalone
@@ -203,19 +220,8 @@ async function writeExport(
   return path;
 }
 
-function download(blob: Blob, name: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
-}
-
 namespace Private {
   export let id = 0;
 }
 
-export default [kernelPolicyPlugin, typstPlugin];
+export default [projectsPlugin, kernelPolicyPlugin, typstPlugin];
