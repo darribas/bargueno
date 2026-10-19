@@ -5,3 +5,6 @@ node_modules/
 test-results/
 __pycache__/
 _exports/
+extension/lib/
+extension/labextension/
+extension/tsconfig.tsbuildinfo

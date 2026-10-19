@@ -1,7 +1,12 @@
 {
   "LiteBuildConfig": {
-    "contents": ["../content"],
+    "contents": [
+      "../content"
+    ],
     "output_dir": "../dist",
-    "no_sourcemaps": true
+    "no_sourcemaps": true,
+    "federated_extensions": [
+      "../extension/labextension"
+    ]
   }
 }
