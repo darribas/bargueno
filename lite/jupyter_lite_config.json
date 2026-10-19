@@ -1,8 +1,5 @@
 {
   "LiteBuildConfig": {
-    "contents": [
-      "../content"
-    ],
     "output_dir": "../dist",
     "no_sourcemaps": true,
     "federated_extensions": [

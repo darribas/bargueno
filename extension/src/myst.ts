@@ -30,7 +30,11 @@ export interface ITypstDocument {
  * Parse a MyST Markdown file and turn it into a Typst document that calls a
  * bundled template with the frontmatter.
  */
-export function mystToTypstDocument(text: string, path: string): ITypstDocument {
+export function mystToTypstDocument(
+  text: string,
+  path: string,
+  defaultTemplate = 'article'
+): ITypstDocument {
   const file = new VFile({ path });
   const tree = mystParse(text) as any;
   const { frontmatter } = getFrontmatter(file, tree) as { frontmatter: any };
@@ -50,12 +54,12 @@ export function mystToTypstDocument(text: string, path: string): ITypstDocument 
   const result = (unified().use(mystToTypst).stringify(tree, file) as any)
     .result as { value: string; macros: string[] };
 
-  const template = TEMPLATES[frontmatter.template] ? frontmatter.template : 'article';
+  // Frontmatter wins over the project's default (bargueno.yml `template:`).
+  const wanted: string = frontmatter.template ?? defaultTemplate;
+  const template = TEMPLATES[wanted] ? wanted : 'article';
   const warnings = file.messages.map(m => m.message);
-  if (frontmatter.template && frontmatter.template !== template) {
-    warnings.push(
-      `Template "${frontmatter.template}" is not available yet; using "${template}".`
-    );
+  if (wanted !== template) {
+    warnings.push(`Template "${wanted}" is not available yet; using "${template}".`);
   }
 
   const source = [

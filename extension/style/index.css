@@ -34,3 +34,8 @@
   background: white;
   box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
 }
+
+.bq-ProjectStatus {
+  padding: 0 8px;
+  font-weight: 600;
+}

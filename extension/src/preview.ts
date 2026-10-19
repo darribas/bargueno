@@ -3,6 +3,7 @@ import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { Contents } from '@jupyterlab/services';
 import { Widget } from '@lumino/widgets';
 
+import { base64ToBytes } from './bytes';
 import type { ICompileInput, IDiagnostic, TypstEngine } from './engine';
 
 export const EXPORT_DIR = '_exports';
@@ -30,7 +31,8 @@ function getEngine(): Promise<TypstEngine> {
 export async function buildInput(
   path: string,
   text: string,
-  contents: Contents.IManager
+  contents: Contents.IManager,
+  defaultTemplate?: string
 ): Promise<{ input: ICompileInput; warnings: string[]; standalone: string }> {
   if (path.toLowerCase().endsWith('.typ')) {
     return { input: { main: text }, warnings: [], standalone: text };
@@ -39,7 +41,7 @@ export async function buildInput(
     import('./myst'),
     import('./templates')
   ]);
-  const doc = mystToTypstDocument(text, path);
+  const doc = mystToTypstDocument(text, path, defaultTemplate);
   const templatePath = `${TEMPLATE_DIR}/${doc.template}.typ`;
   const files: Record<string, Uint8Array> = {};
   const warnings = [...doc.warnings];
@@ -70,9 +72,10 @@ export async function buildInput(
 export async function compilePdf(
   path: string,
   text: string,
-  contents: Contents.IManager
+  contents: Contents.IManager,
+  defaultTemplate?: string
 ): Promise<{ pdf?: Uint8Array; problems: string[] }> {
-  const { input, warnings } = await buildInput(path, text, contents);
+  const { input, warnings } = await buildInput(path, text, contents, defaultTemplate);
   const out = await (await getEngine()).pdf(input);
   return { pdf: out.result, problems: [...warnings, ...formatDiagnostics(out.diagnostics)] };
 }
@@ -84,7 +87,8 @@ export async function compilePdf(
 export class TypstPreview extends Widget {
   constructor(
     readonly source: DocumentRegistry.Context,
-    private readonly _contents: Contents.IManager
+    private readonly _contents: Contents.IManager,
+    private readonly _defaultTemplate: () => string | undefined = () => undefined
   ) {
     super();
     this.addClass('bq-Preview');
@@ -111,7 +115,12 @@ export class TypstPreview extends Widget {
     this._setStatus('Typesetting…');
     try {
       const text = this.source.model.toString();
-      const { input, warnings } = await buildInput(this.path, text, this._contents);
+      const { input, warnings } = await buildInput(
+        this.path,
+        text,
+        this._contents,
+        this._defaultTemplate()
+      );
       const out = await (await getEngine()).svg(input);
       if (run !== this._run || this.isDisposed) {
         return;
@@ -169,22 +178,4 @@ function formatDiagnostics(diagnostics: IDiagnostic[]): string[] {
     const where = d.path ? `${d.path.replace(/^\//, '')}${d.range ? ` ${d.range}` : ''}: ` : '';
     return `${d.severity}: ${where}${d.message}`;
   });
-}
-
-function base64ToBytes(b64: string): Uint8Array {
-  const bin = atob(b64.replace(/\s/g, ''));
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) {
-    bytes[i] = bin.charCodeAt(i);
-  }
-  return bytes;
-}
-
-export function bytesToBase64(bytes: Uint8Array): string {
-  let bin = '';
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return btoa(bin);
 }
