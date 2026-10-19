@@ -16,7 +16,9 @@ import hashlib
 import json
 import re
 import shutil
+import subprocess
 import sys
+from datetime import datetime, timezone
 import zipfile
 from pathlib import Path
 
@@ -136,6 +138,18 @@ def zip_example(dist: Path) -> None:
                 zf.write(path, f"{EXAMPLE.name}/{path.relative_to(EXAMPLE).as_posix()}")
 
 
+def write_version(dist: Path) -> None:
+    """bargueno/version.json: which commit this build is, for Bargueño: About."""
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        commit = "unknown"
+    info = {"commit": commit, "built": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}
+    (dist / "bargueno" / "version.json").write_text(json.dumps(info) + "\n")
+
+
 def write_service_worker(dist: Path) -> int:
     paths = precache_list(dist)
     digest = hashlib.sha256()
@@ -154,6 +168,7 @@ def main(dist: Path) -> None:
     patch_pages(dist)
     copy_typst_assets(dist)
     zip_example(dist)
+    write_version(dist)
     count = write_service_worker(dist)
     print(f"bargueno: patched {dist} ({count} files precached)")
 

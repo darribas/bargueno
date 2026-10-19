@@ -167,3 +167,25 @@ test('a project survives an export → import round trip byte for byte', async (
     Object.fromEntries(Object.entries(entries).map(([k, v]) => [k.slice(prefix.length), strFromU8(v)]));
   expect(strip(again, 'example-copy/')).toEqual(strip(exported, 'example/'));
 });
+
+test('the projects guide in the example typesets cleanly', async ({ page }) => {
+  await openApp(page);
+  await exec(page, 'docmanager:open', { path: 'example/projects.md', factory: 'Editor' });
+  await expect(page.locator('.jp-FileEditor .cm-content').first()).toBeVisible();
+  await exec(page, 'bargueno:preview');
+  const pane = page.locator('.bq-Preview');
+  await expect(pane).toHaveAttribute('data-state', 'ready', { timeout: 60_000 });
+  await expect(pane.locator('.bq-Preview-problems')).toBeHidden();
+  expect(await pane.locator('.typst-page').count()).toBeGreaterThanOrEqual(2);
+});
+
+test('Restore Example Project brings back a fresh copy', async ({ page }) => {
+  await openApp(page);
+  await contents.write(page, 'example/paper.md', '# Mangled\n');
+  await page.evaluate(() => window.jupyterapp.serviceManager.contents.delete('example/projects.md'));
+  const done = exec(page, 'bargueno:restore-example');
+  await page.locator('.jp-Dialog').getByRole('button', { name: 'Replace' }).click();
+  expect(await done).toBe('example');
+  expect(await contents.read(page, 'example/paper.md')).toContain('A Portable Writing Cabinet');
+  expect(await contents.exists(page, 'example/projects.md')).toBe(true);
+});

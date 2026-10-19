@@ -13,12 +13,20 @@ import { Widget } from '@lumino/widgets';
 
 import { pickFile, shareOrDownload } from './files';
 import { IProjects, Projects, SETTINGS_FILE } from './project';
-import { cleanProjectName, exists, unzipProject, writeProject, zipProject } from './zip';
+import {
+  cleanProjectName,
+  exists,
+  type IUnpacked,
+  unzipProject,
+  writeProject,
+  zipProject
+} from './zip';
 
 namespace CommandIDs {
   export const newProject = 'bargueno:new-project';
   export const exportProject = 'bargueno:export-project';
   export const importProject = 'bargueno:import-project';
+  export const restoreExample = 'bargueno:restore-example';
 }
 
 /** Set once the example has been unpacked, so deleting it sticks. */
@@ -143,6 +151,47 @@ export const projectsPlugin: JupyterFrontEndPlugin<IProjects> = {
       }
     });
 
+    /**
+     * Write unpacked files as `project`, asking first if it already exists.
+     * Returns the project name, or undefined if the user said no.
+     */
+    const installProject = async (
+      project: string,
+      files: Map<string, Uint8Array>,
+      source: string,
+      replace?: boolean
+    ): Promise<string | undefined> => {
+      if (await exists(contents, project)) {
+        const ok =
+          replace === true ||
+          (
+            await showDialog({
+              title: 'Replace project?',
+              body: `A project called "${project}" already exists. Replace all of its files with ${source}?`,
+              buttons: [Dialog.cancelButton(), Dialog.warnButton({ label: 'Replace' })]
+            })
+          ).button.accept;
+        if (!ok) {
+          return undefined;
+        }
+        await closeDocumentsIn(project);
+        await contents.delete(project);
+      }
+      await writeProject(contents, project, files);
+      await projects.refresh();
+      return project;
+    };
+
+    /** Close open documents in a project before its files are replaced. */
+    const closeDocumentsIn = async (project: string): Promise<void> => {
+      for (const widget of [...shell.widgets('main')]) {
+        const path = (widget as IDocumentWidget).context?.path;
+        if (path && projects.projectOf(path) === project) {
+          widget.close();
+        }
+      }
+    };
+
     commands.addCommand(CommandIDs.importProject, {
       label: 'Import Project from Zip…',
       caption: 'Unpack a zipped project (for example from Working Copy) into a project folder',
@@ -156,37 +205,28 @@ export const projectsPlugin: JupyterFrontEndPlugin<IProjects> = {
         if (!project || files.size === 0) {
           throw new Error(`${file.name} has no files to import.`);
         }
-        if (await exists(contents, project)) {
-          const replace =
-            args.replace === true ||
-            (
-              await showDialog({
-                title: 'Replace project?',
-                body: `A project called "${project}" already exists. Replace all of its files with the contents of ${file.name}?`,
-                buttons: [Dialog.cancelButton(), Dialog.warnButton({ label: 'Replace' })]
-              })
-            ).button.accept;
-          if (!replace) {
-            return;
-          }
-          await closeDocumentsIn(project);
-          await contents.delete(project);
-        }
-        await writeProject(contents, project, files);
-        await projects.refresh();
-        return project;
+        return installProject(
+          project,
+          files,
+          `the contents of ${file.name}`,
+          args.replace as boolean | undefined
+        );
       }
     });
 
-    /** Close open documents in a project before its files are replaced. */
-    const closeDocumentsIn = async (project: string): Promise<void> => {
-      for (const widget of [...shell.widgets('main')]) {
-        const path = (widget as IDocumentWidget).context?.path;
-        if (path && projects.projectOf(path) === project) {
-          widget.close();
-        }
+    commands.addCommand(CommandIDs.restoreExample, {
+      label: 'Restore Example Project',
+      caption: 'Put a fresh copy of the example project (with its guides) into "example"',
+      execute: async args => {
+        const { name, files } = await fetchExample();
+        return installProject(
+          name ?? 'example',
+          files,
+          'a fresh copy of the example',
+          args.replace as boolean | undefined
+        );
       }
-    };
+    });
 
     if (palette) {
       const category = 'Bargueño';
@@ -237,11 +277,7 @@ async function seedExample(contents: Contents.IManager): Promise<void> {
   if (flag.get()) {
     return;
   }
-  const response = await fetch(URLExt.join(PageConfig.getBaseUrl(), EXAMPLE_ZIP));
-  if (!response.ok) {
-    return;
-  }
-  const { name, files } = unzipProject(new Uint8Array(await response.arrayBuffer()));
+  const { name, files } = await fetchExample();
   const project = name ?? 'example';
   if (!(await exists(contents, project))) {
     await writeProject(contents, project, files);
@@ -249,3 +285,10 @@ async function seedExample(contents: Contents.IManager): Promise<void> {
   flag.set();
 }
 
+async function fetchExample(): Promise<IUnpacked> {
+  const response = await fetch(URLExt.join(PageConfig.getBaseUrl(), EXAMPLE_ZIP));
+  if (!response.ok) {
+    throw new Error(`Could not load the example project (HTTP ${response.status}).`);
+  }
+  return unzipProject(new Uint8Array(await response.arrayBuffer()));
+}

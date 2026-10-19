@@ -39,3 +39,15 @@
   padding: 0 8px;
   font-weight: 600;
 }
+
+.bq-About {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.bq-About dd {
+  margin: 0;
+  word-break: break-word;
+}

@@ -13,6 +13,7 @@ import { Widget } from '@lumino/widgets';
 import { kernelPolicyPlugin } from './kernel';
 import { IProjects } from './project';
 import { projectsPlugin } from './projects-plugin';
+import { updatesPlugin } from './updates';
 import { bytesToBase64 } from './bytes';
 import { download } from './files';
 import {
@@ -224,4 +225,4 @@ namespace Private {
   export let id = 0;
 }
 
-export default [projectsPlugin, kernelPolicyPlugin, typstPlugin];
+export default [projectsPlugin, kernelPolicyPlugin, typstPlugin, updatesPlugin];

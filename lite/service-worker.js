@@ -5,12 +5,19 @@
 //  1. Precache the app shell so Bargueño opens with no network.
 //  2. Keep JupyterLite's /api/drive broadcast, which kernels (Pyodide, later)
 //     use to reach the in-browser file system.
+//
+// Updates: a new deploy changes VERSION, so the browser installs this worker
+// again, it takes over at once (skipWaiting + claim) and the page offers a
+// reload. The previous version's cache is kept until the next update, so a
+// page still running the old code can finish loading its lazy chunks.
 'use strict';
 
 const VERSION = '__BARGUENO_VERSION__';
 const PRECACHE = __BARGUENO_PRECACHE__;
 const CACHE = `bargueno-${VERSION}`;
 const RUNTIME = `${CACHE}-runtime`;
+// Remembers which version was active before this one.
+const META = 'bargueno-meta';
 const broadcast = new BroadcastChannel('/sw-api.v1');
 
 const scope = () => new URL(self.registration.scope);
@@ -27,11 +34,21 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
+      const meta = await caches.open(META);
+      const last = await meta.match('active');
+      const previous = last ? await last.text() : null;
+      const keep = new Set([CACHE, RUNTIME, META]);
+      if (previous && previous !== VERSION) {
+        keep.add(`bargueno-${previous}`);
+        keep.add(`bargueno-${previous}-runtime`);
+      }
       for (const key of await caches.keys()) {
-        if (key.startsWith('bargueno-') && key !== CACHE && key !== RUNTIME) {
+        // Versions before this scheme left no record: keep theirs one round.
+        if (key.startsWith('bargueno-') && !keep.has(key) && previous) {
           await caches.delete(key);
         }
       }
+      await meta.put('active', new Response(VERSION));
       await self.clients.claim();
     })()
   );
@@ -55,11 +72,17 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(broadcastOne(request, url));
     return;
   }
-  if (request.method !== 'GET' || url.origin !== location.origin) {
+  // Never answer for the worker script itself: the browser must always see
+  // the deployed one, or it can never find out there is an update.
+  if (request.method !== 'GET' || url.origin !== location.origin || isWorkerScript(url)) {
     return;
   }
   event.respondWith(fromCacheOrNetwork(request, url));
 });
+
+function isWorkerScript(url) {
+  return url.pathname === new URL('service-worker.js', scope()).pathname;
+}
 
 async function fromCacheOrNetwork(request, url) {
   const key = url.pathname.endsWith('/') ? new URL('index.html', url) : url;

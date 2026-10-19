@@ -107,3 +107,35 @@ New in `tests/projects.spec.mjs` (9 tests):
    sharing files (macOS, Windows); otherwise the zip downloads.
 4. Still open from the spec: real local folders through the File System
    Access API (desktop Chromium, "Later").
+
+## Follow-up: updates, About, and the projects guide
+
+These were added after the merge, while investigating a report that the
+preview stopped working on the deployed site (Zen, a Firefox-based
+browser).
+
+- **Service worker updates.**
+  - The worker never answers for its own `service-worker.js`.
+  - When a new version activates, it keeps the previous version's caches
+    until the next update, so a page still running the old code can finish
+    loading its lazy chunks (the Typst engine, the MyST converter).
+    Previously, those chunks were deleted from the cache *and* the server
+    at once.
+  - Versions from before this change left no record of their cache name,
+    so their caches are kept for one round.
+- **Update notice.** When a new version takes over, a notification says so
+  and offers *Reload* (SPEC: "Update available, reload").
+- **About Bargueño** shows the build's git commit and date
+  (`bargueno/version.json`), the offline cache version, whether storage is
+  persistent, and the browser.
+- **Restore Example Project** fetches a fresh copy of the example, asking
+  before replacing. Unpacking happens only once, so this is how existing
+  users get files added to the example later.
+- **`example/projects.md`** is a user guide to the projects feature, written
+  as a MyST manuscript, so it previews like any other document.
+
+The preview failure itself could not be reproduced. In headless Chromium,
+both a clean install and an upgrade from milestone 2 to milestone 3 (with
+a used profile) preview correctly, and Firefox cannot be installed in the
+build environment. *About Bargueño* is there to pin down what a given
+browser is actually running.
