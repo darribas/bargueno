@@ -76,17 +76,14 @@ licences; see `bargueno/typst/FONTS-NOTICE.txt` in the build).
 
 ## Findings
 
-1. **Install size has doubled.** The precache is now about 61 MB (790
-   files), and 28 MB of that is the typst.ts web compiler (10.8 MB
-   gzipped). Options:
-   - (a) Cache Typst on first preview instead of at install. That is
-     smaller up front, but the preview won't work offline until it has
-     been opened once online.
-   - (b) Keep the current approach (fully offline after install) and tell
-     the user how big the first install is.
-   - (c) Look for a smaller compiler build.
-
-   This needs a decision before v1.
+1. **Install size has doubled. Decision: precache everything at install.**
+   The precache is now about 61 MB (790 files), and 28 MB of that is the
+   typst.ts web compiler (10.8 MB gzipped). The service worker stores all of
+   it when the app is installed, so the preview and PDF export work offline
+   from the first launch. The offline test checks this: it never opens a
+   preview online before going offline. Making the first install smaller
+   (for example with a smaller compiler build, or by stripping JupyterLab
+   plugins in milestone 5) remains worthwhile, but not by deferring assets.
 2. **Tables from MyST need Typst packages.** myst-to-typst writes MyST
    tables with `@preview/tablex` and subfigures with `@preview/subpar`.
    Those packages are fetched from Typst Universe, which isn't reachable
